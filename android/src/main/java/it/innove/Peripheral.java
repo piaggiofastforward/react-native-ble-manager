@@ -108,7 +108,7 @@ public class Peripheral extends BluetoothGattCallback {
 			this.connecting = true;
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 				Log.d(BleManager.LOG_TAG, " Is Or Greater than M $mBluetoothDevice");
-				gatt = device.connectGatt(activity, false, this, BluetoothDevice.TRANSPORT_LE);
+				gatt = device.connectGatt(activity, false, this, BluetoothDevice.TRANSPORT_AUTO); // Use TRANSPORT_AUTO for dual mode connection
 			} else {
 				Log.d(BleManager.LOG_TAG, " Less than M");
 				try {
