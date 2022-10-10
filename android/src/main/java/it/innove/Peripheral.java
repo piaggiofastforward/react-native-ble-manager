@@ -112,6 +112,38 @@ public class Peripheral extends BluetoothGattCallback {
 			} else {
 				Log.d(BleManager.LOG_TAG, " Less than M");
 				try {
+					Log.d(BleManager.LOG_TAG, " Trying TRANPORT Auto with reflection");
+					Method m = device.getClass().getDeclaredMethod("connectGatt", Context.class, Boolean.class,
+							BluetoothGattCallback.class, Integer.class);
+					m.setAccessible(true);
+					Integer transport = device.getClass().getDeclaredField("TRANSPORT_AUTO").getInt(null);
+					gatt = (BluetoothGatt) m.invoke(device, activity, false, this, transport);
+				} catch (Exception e) {
+					e.printStackTrace();
+					Log.d(TAG, " Catch to call normal connection");
+					gatt = device.connectGatt(activity, false, this);
+				}
+			}
+		} else {
+			if (gatt != null) {
+				callback.invoke();
+			} else {
+				callback.invoke("BluetoothGatt is null");
+			}
+		}
+	}
+
+	public void connectLe(Callback callback, Activity activity) {
+		if (!connected) {
+			BluetoothDevice device = getDevice();
+			this.connectCallback = callback;
+			this.connecting = true;
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+				Log.d(BleManager.LOG_TAG, " Is Or Greater than M $mBluetoothDevice");
+				gatt = device.connectGatt(activity, false, this, BluetoothDevice.TRANSPORT_LE); // Use TRANSPORT_AUTO for dual mode connection
+			} else {
+				Log.d(BleManager.LOG_TAG, " Less than M");
+				try {
 					Log.d(BleManager.LOG_TAG, " Trying TRANPORT LE with reflection");
 					Method m = device.getClass().getDeclaredMethod("connectGatt", Context.class, Boolean.class,
 							BluetoothGattCallback.class, Integer.class);
@@ -132,6 +164,7 @@ public class Peripheral extends BluetoothGattCallback {
 			}
 		}
 	}
+
 	// bt_btif : Register with GATT stack failed.
 
 	public void disconnect(boolean force) {

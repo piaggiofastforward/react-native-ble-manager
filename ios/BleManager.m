@@ -711,6 +711,11 @@ RCT_EXPORT_METHOD(createBond:(NSString *)deviceUUID devicePin:(NSString *)device
     callback(@[@"Not supported"]);
 }
 
+RCT_EXPORT_METHOD(connectLe:(NSString *)deviceUUID devicePin:(NSString *)devicePin callback:(nonnull RCTResponseSenderBlock)callback)
+{
+    callback(@[@"Not supported"]);
+}
+
 RCT_EXPORT_METHOD(removeBond:(NSString *)deviceUUID callback:(nonnull RCTResponseSenderBlock)callback)
 {
     callback(@[@"Not supported"]);
