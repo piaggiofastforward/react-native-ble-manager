@@ -711,7 +711,11 @@ public class Peripheral extends BluetoothGattCallback {
 		new Handler(Looper.getMainLooper()).post(new Runnable() {
 				@Override
 				public void run() {
-					callback.invoke(message, null);
+					try {
+						callback.invoke(message, null);
+					} catch (Exception e) {
+						Log.e(BleManager.LOG_TAG, "Error call sendBackrError: ", e);
+					}
 				}
 			});
 	}
