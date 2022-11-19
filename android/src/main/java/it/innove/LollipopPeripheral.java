@@ -20,11 +20,13 @@ public class LollipopPeripheral extends Peripheral {
 
 	private ScanRecord advertisingData;
 	private ScanResult scanResult;
+	private Boolean connectable;
 
 	public LollipopPeripheral(ReactContext reactContext, ScanResult result) {
 		super(result.getDevice(), result.getRssi(), result.getScanRecord().getBytes(), reactContext);
 		this.advertisingData = result.getScanRecord();
 		this.scanResult = result;
+		this.connectable = result.isConnectable();
 	}
 
 	public LollipopPeripheral(BluetoothDevice device, ReactApplicationContext reactContext) {
@@ -42,7 +44,7 @@ public class LollipopPeripheral extends Peripheral {
 			if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
 				// We can check if peripheral is connectable using the scanresult
 				if (this.scanResult != null) {
-					advertising.putBoolean("isConnectable", scanResult.isConnectable());
+					advertising.putBoolean("isConnectable", this.connectable);
 				}
 			} else{
 				// We can't check if peripheral is connectable
@@ -85,7 +87,7 @@ public class LollipopPeripheral extends Peripheral {
 	}
 
 	public void updateData(ScanResult result) {
-		scanResult = result;
+		connectable = result.isConnectable();
 		advertisingData = result.getScanRecord();
 		advertisingDataBytes = advertisingData.getBytes();
 	}
