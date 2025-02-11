@@ -40,7 +40,13 @@ import static android.app.Activity.RESULT_OK;
 import static android.bluetooth.BluetoothProfile.GATT;
 import static android.os.Build.VERSION_CODES.LOLLIPOP;
 
-class BleManager extends ReactContextBaseJavaModule {
+public class BleManager extends ReactContextBaseJavaModule {
+
+    private static BleManager instance;
+
+    public static BleManager getInstance() {
+        return instance;
+    }
 
     public static final String LOG_TAG = "ReactNativeBleManager";
     private static final int ENABLE_REQUEST = 539;
@@ -99,6 +105,7 @@ class BleManager extends ReactContextBaseJavaModule {
 
     public BleManager(ReactApplicationContext reactContext) {
         super(reactContext);
+        instance = this; // Assign instance when JS initializes it
         context = reactContext;
         this.reactContext = reactContext;
         reactContext.addActivityEventListener(mActivityEventListener);
@@ -765,4 +772,31 @@ class BleManager extends ReactContextBaseJavaModule {
             scanManager.stopScan(args -> {});
         }
     }
+
+    /**
+     * Disconnects all connected peripherals by first sending a termination message.
+     *
+     * This method:
+     * 1. Iterates through all connected peripherals.
+     * 2. Calls `disconnectWithServiceUUID` on each peripheral.
+     * 3. Ensures all devices receive a termination message before disconnecting.
+     *
+     * @param serviceUUID The UUID of the BLE service that contains the characteristic for termination messaging.
+     * @param characteristicUUID The UUID of the BLE characteristic to which the termination message will be written.
+     * @param message A byte array containing the termination message.
+     *
+     * @note This method ensures that all connected peripherals receive a termination message before being disconnected.
+     */
+    public void disconnectAllPeripheralsWithServiceUUID(String serviceUUID, String characteristicUUID, byte[] message) {
+        Log.d(LOG_TAG, "Disconnecting all connected peripherals...");
+
+        synchronized (peripherals) {
+            for (Peripheral peripheral : peripherals.values()) {
+                if (peripheral.isConnected()) {
+                    peripheral.disconnectWithServiceUUID(serviceUUID, characteristicUUID, message);
+                }
+            }
+        }
+    }
+
 }

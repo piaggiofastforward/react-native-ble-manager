@@ -247,6 +247,61 @@ bool hasListeners;
         return 0;
 }
 
+/**
+ * @brief Disconnects all currently connected  peripherals by sending a termination message.
+ *
+ * This method iterates through all connected peripherals, writes a specified termination message
+ * to a given characteristic on each device.
+ *
+ * @param serviceUUID The UUID of the BLE service that contains the characteristic for termination messaging.
+ * @param characteristicUUID The UUID of the BLE characteristic to which the termination message will be written.
+ * @param message An NSArray of NSNumber values representing the termination message in bytes.
+ *
+ * @note The termination message should be 20 bytes or less to fit in a single BLE packet. If a device is connected,
+ *       this function will first send the message using `writeWithoutResponse`, then initiate a disconnection.
+ *
+ * @see writeWithoutResponse:serviceUUID:characteristicUUID:message:maxByteSize:callback:
+ */
+- (void)disconnectAllPeripheralsWithServiceUUID:(NSString *)serviceUUID
+                             characteristicUUID:(NSString *)characteristicUUID
+                                        message:(NSArray<NSNumber *> *)message {
+    if (!manager) {
+        NSLog(@"BLE Manager is NULL. Cannot disconnect peripherals.");
+        return;
+    }
+    
+    NSLog(@"Disconnecting all connected peripherals...");
+
+    @synchronized(peripherals) {
+        for (CBPeripheral *peripheral in peripherals) {
+            if (peripheral.state == CBPeripheralStateConnected) {
+                
+                // Get the device UUID
+                NSString *deviceUUID = peripheral.identifier.UUIDString;
+
+                // Set maximum byte size and queue sleep time (adjustable)
+                NSInteger maxByteSize = 20; // Default max bytes per BLE packet
+                NSInteger queueSleepTime = 10; // Delay between packets in ms
+
+                NSLog(@"Sending termination message to %@ on service %@, characteristic %@",
+                      deviceUUID, serviceUUID, characteristicUUID);
+
+                // Call the writeWithoutResponse method directly
+                [self writeWithoutResponse:deviceUUID
+                               serviceUUID:serviceUUID
+                        characteristicUUID:characteristicUUID
+                                   message:message
+                              maxByteSize:maxByteSize
+                          queueSleepTime:queueSleepTime
+                                 callback:^(NSArray *response) {
+                    NSLog(@"Termination message sent successfully to %@", deviceUUID);
+                }];
+            }
+        }
+    }
+}
+
+
 RCT_EXPORT_METHOD(getDiscoveredPeripherals:(nonnull RCTResponseSenderBlock)callback)
 {
     NSLog(@"Get discovered peripherals");

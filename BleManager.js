@@ -133,7 +133,7 @@ class BleManager {
 
   connectLe(peripheralId) {
     return new Promise((fulfill, reject) => {
-      bleManager.connect(peripheralId, error => {
+      bleManager.connectLe(peripheralId, error => {
         if (error) {
           reject(error);
         } else {

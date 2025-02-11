@@ -29,4 +29,9 @@
 // For integration with external libraries, advanced use only.
 +(BleManager *)getInstance;
 
+// Disconnects all currently connected Gita devices after sending a termination message.
+- (void)disconnectAllPeripheralsWithServiceUUID:(NSString *)serviceUUID
+                             characteristicUUID:(NSString *)characteristicUUID
+                                        message:(NSArray<NSNumber *> *)message;
+
 @end
