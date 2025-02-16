@@ -1051,4 +1051,55 @@ public class Peripheral extends BluetoothGattCallback {
 		return String.valueOf(serviceUUID) + "|" + characteristic.getUuid() + "|" + characteristic.getInstanceId();
 	}
 
+	/**
+	 * Disconnects the peripheral by first sending a termination message to a specific BLE characteristic.
+	 *
+	 * This method:
+	 * 1. Checks if the peripheral is connected.
+	 * 2. Finds the specified service and characteristic.
+	 * 3. Writes a termination message to the characteristic.
+	 * 4. Disconnects the peripheral after the message is sent.
+	 *
+	 * @param serviceUUID The UUID of the BLE service that contains the characteristic for termination messaging.
+	 * @param characteristicUUID The UUID of the BLE characteristic to which the termination message will be written.
+	 * @param message A byte array containing the termination message.
+	 *
+	 * @note If the service or characteristic is not found, the peripheral will be disconnected immediately.
+	 */
+	public void disconnectWithServiceUUID(String serviceUUID, String characteristicUUID, byte[] message) {
+		if (!isConnected() || gatt == null) {
+			Log.e(BleManager.LOG_TAG, "Peripheral is not connected or BluetoothGatt is null. Skipping...");
+			return;
+		}
+
+		// Retrieve the BluetoothGattService
+		BluetoothGattService service = gatt.getService(UUIDHelper.uuidFromString(serviceUUID));
+		if (service == null) {
+			Log.e(BleManager.LOG_TAG, "Service " + serviceUUID + " not found on device: " + device.getAddress());
+			disconnect(true);
+			return;
+		}
+
+		// Retrieve the BluetoothGattCharacteristic
+		BluetoothGattCharacteristic characteristic = service.getCharacteristic(UUIDHelper.uuidFromString(characteristicUUID));
+		if (characteristic == null) {
+			Log.e(BleManager.LOG_TAG, "Characteristic " + characteristicUUID + " not found on device: " + device.getAddress());
+			disconnect(true);
+			return;
+		}
+
+		// Write the termination message to the characteristic
+		characteristic.setValue(message);
+		boolean success = gatt.writeCharacteristic(characteristic);
+		if (success) {
+			Log.d(BleManager.LOG_TAG, "Termination message sent to device: " + device.getAddress());
+		} else {
+			Log.e(BleManager.LOG_TAG, "Failed to send termination message to device: " + device.getAddress());
+		}
+
+		// Disconnect the peripheral
+		disconnect(true);
+		Log.d(BleManager.LOG_TAG, "Disconnected device: " + device.getAddress());
+	}
+
 }
