@@ -761,7 +761,12 @@ RCT_EXPORT_METHOD(getBondedPeripherals:(nonnull RCTResponseSenderBlock)callback)
     callback(@[@"Not supported"]);
 }
 
-RCT_EXPORT_METHOD(createBond:(NSString *)deviceUUID devicePin:(NSString *)devicePin callback:(nonnull RCTResponseSenderBlock)callback)
+RCT_EXPORT_METHOD(createBond:(NSString *)deviceUUID devicePin:(NSString *)devicePin transport:(NSInteger)transport callback:(nonnull RCTResponseSenderBlock)callback)
+{
+    callback(@[@"Not supported"]);
+}
+
+RCT_EXPORT_METHOD(connectA2dp:(NSString *)deviceUUID callback:(nonnull RCTResponseSenderBlock)callback)
 {
     callback(@[@"Not supported"]);
 }

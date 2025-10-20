@@ -143,9 +143,9 @@ class BleManager {
     });
   }
 
-  createBond(peripheralId,peripheralPin=null) {
+  createBond(peripheralId, peripheralPin = null, transport = 0) {
     return new Promise((fulfill, reject) => {
-      bleManager.createBond(peripheralId,peripheralPin, error => {
+      bleManager.createBond(peripheralId, peripheralPin, transport, error => {
         if (error) {
           reject(error);
         } else {
@@ -158,6 +158,18 @@ class BleManager {
   removeBond(peripheralId) {
     return new Promise((fulfill, reject) => {
       bleManager.removeBond(peripheralId, error => {
+        if (error) {
+          reject(error);
+        } else {
+          fulfill();
+        }
+      });
+    });
+  }
+
+  connectA2dp(peripheralId) {
+    return new Promise((fulfill, reject) => {
+      bleManager.connectA2dp(peripheralId, error => {
         if (error) {
           reject(error);
         } else {

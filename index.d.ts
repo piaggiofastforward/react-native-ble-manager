@@ -4,6 +4,7 @@ declare module "react-native-ble-manager" {
     rssi: number;
     name?: string;
     advertising: AdvertisingData;
+    type?: 'CLASSIC' | 'LE' | 'DUAL' | 'UNKNOWN';
   }
 
   export interface AdvertisingData {
@@ -116,9 +117,11 @@ declare module "react-native-ble-manager" {
 
   export function createBond(
     peripheralID: string,
-    peripheralPin?: string
+    peripheralPin?: string,
+    transport?: number
   ): Promise<void>;
   export function removeBond(peripheralID: string): Promise<void>;
+  export function connectA2dp(peripheralID: string): Promise<void>;
   export function getBondedPeripherals(): Promise<Peripheral[]>;
   export function removePeripheral(peripheralID: string): Promise<void>;
 

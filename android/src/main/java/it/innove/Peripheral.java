@@ -200,6 +200,25 @@ public class Peripheral extends BluetoothGattCallback {
 			map.putString("id", device.getAddress()); // mac address
 			map.putInt("rssi", advertisingRSSI);
 
+			// Add device type information
+			int deviceType = device.getType();
+			String deviceTypeString;
+			switch (deviceType) {
+				case BluetoothDevice.DEVICE_TYPE_CLASSIC:
+					deviceTypeString = "CLASSIC"; // BR/EDR only
+					break;
+				case BluetoothDevice.DEVICE_TYPE_LE:
+					deviceTypeString = "LE"; // BLE only
+					break;
+				case BluetoothDevice.DEVICE_TYPE_DUAL:
+					deviceTypeString = "DUAL"; // Supports both BR/EDR and LE
+					break;
+				default:
+					deviceTypeString = "UNKNOWN";
+					break;
+			}
+			map.putString("type", deviceTypeString);
+
 			String name = device.getName();
 			if (name != null)
 				advertising.putString("localName", name);

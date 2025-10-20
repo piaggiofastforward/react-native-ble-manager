@@ -29,6 +29,7 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.RCTNativeAppEventEmitter;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -230,12 +231,13 @@ public class BleManager extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void createBond(String peripheralUUID, String peripheralPin, Callback callback) {
-        Log.d(LOG_TAG, "Request bond to: " + peripheralUUID);
+    public void createBond(String peripheralUUID, String peripheralPin, int transport, Callback callback) {
+        Log.d(LOG_TAG, "Request bond to: " + peripheralUUID + " (transport=" + transport + ")");
 
-        Set<BluetoothDevice> deviceSet = getBluetoothAdapter().getBondedDevices();
-        for (BluetoothDevice device : deviceSet) {
+        Set<BluetoothDevice> bondedDevices = getBluetoothAdapter().getBondedDevices();
+        for (BluetoothDevice device : bondedDevices) {
             if (peripheralUUID.equalsIgnoreCase(device.getAddress())) {
+                Log.d(LOG_TAG, "Device already bonded: " + peripheralUUID);
                 callback.invoke();
                 return;
             }
@@ -243,18 +245,89 @@ public class BleManager extends ReactContextBaseJavaModule {
 
         Peripheral peripheral = retrieveOrCreatePeripheral(peripheralUUID);
         if (peripheral == null) {
-            callback.invoke("Invalid peripheral uuid");
+            callback.invoke("Invalid peripheral UUID");
             return;
         } else if (bondRequest != null) {
-            callback.invoke("Only allow one bond request at a time");
-            return;
-        } else if (peripheral.getDevice().createBond()) {
-            Log.d(LOG_TAG, "Request bond successful for: " + peripheralUUID);
-            bondRequest = new BondRequest(peripheralUUID, peripheralPin, callback); // request bond success, waiting for boradcast
+            callback.invoke("Only one bond request allowed at a time");
             return;
         }
 
-        callback.invoke("Create bond request fail");
+        BluetoothDevice device = peripheral.getDevice();
+        boolean bonded = false;
+
+        try {
+            // Try hidden createBond(int transport)
+            Method createBondMethod = BluetoothDevice.class.getMethod("createBond", int.class);
+            bonded = (boolean) createBondMethod.invoke(device, transport);
+            Log.d(LOG_TAG, "Invoked hidden createBond(" + transport + ")");
+
+        } catch (NoSuchMethodException e) {
+            Log.w(LOG_TAG, "createBond(int) not found — fallback to default createBond()");
+            bonded = device.createBond();
+
+        } catch (InvocationTargetException | IllegalAccessException e) {
+            Log.e(LOG_TAG, "createBond(int) reflection failed — fallback to default", e);
+            bonded = device.createBond();
+        }
+
+        if (bonded) {
+            Log.d(LOG_TAG, "Bond request sent for " + peripheralUUID);
+            bondRequest = new BondRequest(peripheralUUID, peripheralPin, callback);
+        } else {
+            Log.e(LOG_TAG, "Bond request failed for " + peripheralUUID);
+            callback.invoke("Bond request failed");
+        }
+    }
+
+    @ReactMethod
+    public void connectA2dp(String peripheralUUID, Callback callback) {
+        Log.d(LOG_TAG, "Connect A2DP to: " + peripheralUUID);
+
+        Peripheral peripheral = peripherals.get(peripheralUUID);
+        if (peripheral == null) {
+            callback.invoke("Peripheral not found");
+            return;
+        }
+
+        BluetoothDevice device = peripheral.getDevice();
+        tryConnectA2dp(device, callback);
+    }
+
+    @android.annotation.SuppressLint("PrivateApi")
+    private void tryConnectA2dp(BluetoothDevice device, Callback callback) {
+        Log.d(LOG_TAG, "Attempting A2DP connection for: " + device.getAddress());
+
+        try {
+            BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+            Method getProfileProxy = BluetoothAdapter.class.getMethod(
+                    "getProfileProxy", Context.class, android.bluetooth.BluetoothProfile.ServiceListener.class, int.class);
+
+            getProfileProxy.invoke(adapter, reactContext, new android.bluetooth.BluetoothProfile.ServiceListener() {
+                @Override
+                public void onServiceConnected(int profile, android.bluetooth.BluetoothProfile proxy) {
+                    if (profile == android.bluetooth.BluetoothProfile.A2DP) {
+                        try {
+                            Method connect = proxy.getClass().getMethod("connect", BluetoothDevice.class);
+                            connect.invoke(proxy, device);
+                            Log.d(LOG_TAG, "A2DP connect() invoked successfully for " + device.getAddress());
+                            callback.invoke();
+                        } catch (Exception e) {
+                            Log.e(LOG_TAG, "A2DP connect() failed", e);
+                            callback.invoke("A2DP connect failed: " + e.getMessage());
+                        }
+                    }
+                }
+
+                @Override
+                public void onServiceDisconnected(int profile) {
+                    Log.d(LOG_TAG, "A2DP profile disconnected");
+                }
+            }, android.bluetooth.BluetoothProfile.A2DP);
+
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Failed to request A2DP connect()", e);
+            callback.invoke("Failed to get A2DP profile: " + e.getMessage());
+        }
     }
 
     @ReactMethod
